@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Pro - PRISMA LEAGUE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #020617; color: white; font-family: 'Rajdhani', sans-serif; }
+        .match-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 4px; transition: 0.3s; }
+        .match-card:hover { border-color: #eab308; }
+        .tab-active { background-color: #eab308; color: #000; box-shadow: 0 0 15px rgba(234, 179, 8, 0.3); font-weight: 800; }
+        .week-nav-container { display: flex; gap: 4px; overflow-x: auto; white-space: nowrap; padding-bottom: 5px; -webkit-overflow-scrolling: touch; max-width: 250px; }
+        .week-nav-container::-webkit-scrollbar { display: none; }
+        .table-header { background-color: #1e293b; color: #94a3b8; font-size: 8px; text-transform: uppercase; }
+        .mini-label { font-size: 8px; color: #64748b; font-weight: bold; margin-bottom: 2px; }
+        .highlight-pts { color: #eab308; font-weight: 900; }
+        .plus { color: #22c55e; } .minus { color: #ef4444; } 
+    </style>
+</head>
+<body class="p-4 md:p-10 pb-20">
+
+    <script>
+        // ============================================================
+        // ADMIN: EDIT DATA DI SINI
+        // ============================================================
+        
+        // 1. DAFTAR TIM (Sesuaikan dengan nama tim turnamen Anda)
+        const teams = ["RRQ", "EVOS", "ONIC", "ALTER EGO"];
+
+        // 2. JADWAL & SKOR (Ganti null dengan angka jika sudah ada skor)
+        const matchData = [
+            // WEEK 1
+            { week: 1, date: "MINGGU, 29 MAR", time: "15:00", t1: "RRQ", s1: null, t2: "EVOS", s2: null },
+            { week: 1, date: "MINGGU, 29 MAR", time: "18:00", t1: "ONIC", s1: null, t2: "ALTER EGO", s2: null },
+            
+            // WEEK 2
+            { week: 2, date: "MINGGU, 05 APR", time: "15:00", t1: "RRQ", s1: null, t2: "ONIC", s2: null },
+            { week: 2, date: "MINGGU, 05 APR", time: "18:00", t1: "EVOS", s1: null, t2: "ALTER EGO", s2: null },
+
+            // Tambahkan jadwal minggu berikutnya (3-9) dengan format yang sama di bawah ini...
+        ];
+        // ============================================================
+    </script>
+
+    <header class="max-w-7xl mx-auto text-center mb-10">
+        <h1 class="text-4xl md:text-6xl font-black uppercase italic text-yellow-500">PRISMA <span class="text-white">LEAGUE</span></h1>
+        <p class="text-[10px] tracking-[0.5em] text-slate-500 font-bold uppercase mt-2">PT PRISMA CAHAYA PERSADA</p>
+        <div class="h-1 w-24 bg-yellow-500 mx-auto mt-4 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]"></div>
+    </header>
+
+    <div class="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-5 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h2 class="text-xl font-bold uppercase italic tracking-widest text-slate-500">Schedule</h2>
+                <nav id="week-tabs" class="week-nav-container"></nav>
+            </div>
+            <div id="schedule-container" class="space-y-4"></div>
+        </div>
+
+        <div class="lg:col-span-7 space-y-6">
+            <h2 class="text-xl font-bold uppercase italic tracking-widest text-slate-500">Standings</h2>
+            <div class="bg-[#0f172a] rounded overflow-hidden border border-slate-800 shadow-2xl">
+                <table class="w-full text-center">
+                    <thead>
+                        <tr class="table-header">
+                            <th class="p-4">#</th>
+                            <th class="p-4 text-left text-[10px] text-white">Team Name</th>
+                            <th class="p-4 bg-slate-900/40 border-r border-slate-800"><div class="mini-label">MATCH</div>W-L</th>
+                            <th class="p-4 bg-slate-900/40 border-r border-slate-800"><div class="mini-label text-yellow-500">MATCH</div>PTS</th>
+                            <th class="p-4 border-r border-slate-800"><div class="mini-label">GAME</div>W-L</th>
+                            <th class="p-4"><div class="mini-label text-yellow-500">NET GAME</div>PTS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="standings-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentWeek = 1;
+        function render() {
+            const availableWeeks = [...new Set(matchData.map(m => m.week))].sort((a,b) => a-b);
+            document.getElementById('week-tabs').innerHTML = availableWeeks.map(w => `
+                <button onclick="currentWeek=${w}; render()" class="flex-shrink-0 px-4 py-1 text-[10px] font-bold border ${currentWeek == w ? 'tab-active border-yellow-500' : 'border-slate-800 text-slate-500'} uppercase">W${w}</button>
+            `).join('');
+
+            const scheduleContainer = document.getElementById('schedule-container');
+            const filteredData = matchData.filter(m => m.week === currentWeek);
+            let lastDate = "";
+            
+            if(filteredData.length === 0) {
+                scheduleContainer.innerHTML = `<div class="text-center p-10 text-slate-700 italic border border-dashed border-slate-800">Belum ada jadwal.</div>`;
+            } else {
+                scheduleContainer.innerHTML = filteredData.map(m => {
+                    let dateHeader = m.date !== lastDate ? `<div class="text-[10px] font-bold text-slate-700 tracking-[0.3em] uppercase mt-6 mb-2">${m.date}</div>` : "";
+                    lastDate = m.date;
+                    const isFinal = m.s1 !== null && m.s2 !== null;
+                    return `
+                        ${dateHeader}
+                        <div class="match-card p-5 flex items-center justify-between">
+                            <div class="flex-1 text-right font-black italic uppercase text-lg ${isFinal && m.s1 > m.s2 ? 'text-yellow-500' : 'text-white'}">${m.t1}</div>
+                            <div class="px-6 flex flex-col items-center min-w-[120px]">
+                                ${isFinal ? `<div class="text-3xl font-black italic">${m.s1}-${m.s2}</div>` : `<div class="text-[10px] text-slate-500 font-bold mb-1">${m.time}</div><span class="text-lg font-black text-slate-800 italic">VS</span>`}
+                            </div>
+                            <div class="flex-1 text-left font-black italic uppercase text-lg ${isFinal && m.s2 > m.s1 ? 'text-yellow-500' : 'text-white'}">${m.t2}</div>
+                        </div>`;
+                }).join('');
+            }
+
+            let stats = teams.reduce((acc, t) => { acc[t] = { name: t, mW: 0, mL: 0, mPts: 0, gW: 0, gL: 0, netG: 0 }; return acc; }, {});
+            matchData.forEach(m => {
+                if (m.s1 !== null && m.s2 !== null) {
+                    stats[m.t1].gW += m.s1; stats[m.t1].gL += m.s2; stats[m.t2].gW += m.s2; stats[m.t2].gL += m.s1;
+                    stats[m.t1].netG += (m.s1 - m.s2); stats[m.t2].netG += (m.s2 - m.s1);
+                    if (m.s1 > m.s2) { stats[m.t1].mW++; stats[m.t1].mPts++; stats[m.t2].mL++; } 
+                    else if (m.s2 > m.s1) { stats[m.t2].mW++; stats[m.t2].mPts++; stats[m.t1].mL++; }
+                }
+            });
+
+            const sorted = Object.values(stats).sort((a, b) => b.mPts - a.mPts || b.netG - a.netG);
+            document.getElementById('standings-body').innerHTML = sorted.map((t, i) => `
+                <tr class="border-b border-slate-900/50 ${i < 3 ? 'text-white font-bold' : 'text-slate-500'}">
+                    <td class="p-4 font-black italic ${i==0?'text-yellow-500 text-lg':''}">${i + 1}</td>
+                    <td class="p-4 font-black italic uppercase text-left text-sm tracking-tighter">${t.name}</td>
+                    <td class="p-4 text-center text-xs font-mono bg-slate-900/10 border-r border-slate-800/50">${t.mW}-${t.mL}</td>
+                    <td class="p-4 text-center highlight-pts bg-slate-900/10 border-r border-slate-800/50">${t.mPts}</td>
+                    <td class="p-4 text-center text-xs font-mono border-r border-slate-800/50">${t.gW}-${t.gL}</td>
+                    <td class="p-4 text-center font-black ${t.netG > 0 ? 'plus' : (t.netG < 0 ? 'minus' : '')}">${t.netG}</td>
+                </tr>`).join('');
+        }
+        document.addEventListener('DOMContentLoaded', render);
+    </script>
+</body>
+</html>
