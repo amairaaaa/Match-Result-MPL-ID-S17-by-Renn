@@ -373,4 +373,120 @@
                 games: [
                 ] 
             },
-            { wee
+            { week: 9, day: "Minggu, 24 Mei 2026", time: "14:15", t1: "RRQ", s1: null, t2: "DEWA", s2: null, 
+                games: [
+                ] 
+            },
+            { week: 9, day: "Minggu, 24 Mei 2026", time: "17:15", t1: "ONIC", s1: null, t2: "EVOS", s2: null, 
+                games: [
+                ] 
+            },
+            { week: 9, day: "Minggu, 24 Mei 2026", time: "20:15", t1: "NAVI", s1: null, t2: "GEEK", s2: null, 
+                games: [
+                ] 
+            },
+            // ... Tambahkan match lain sesuai format di atas
+        ];
+
+        let currentViewWeek = 1;
+
+        function toggleDetail(id) {
+            const el = document.getElementById(id);
+            if(el) el.classList.toggle('active');
+        }
+
+        function changeGameTab(mIdx, gIdx) {
+            document.querySelectorAll(`.gt-${mIdx}`).forEach(t => t.classList.remove('active'));
+            document.querySelectorAll(`.gc-${mIdx}`).forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${mIdx}-${gameIdx}`).classList.add('active'); // Perbaikan: gIdx bukan gameIdx
+            document.getElementById(`content-${mIdx}-${gameIdx}`).classList.remove('hidden');
+        }
+        // Fungsi perbaikan karena ada typo di atas
+        function changeGameTabFixed(mIdx, gIdx) {
+            document.querySelectorAll(`.gt-${mIdx}`).forEach(t => t.classList.remove('active'));
+            document.querySelectorAll(`.gc-${mIdx}`).forEach(c => c.classList.add('hidden'));
+            document.getElementById(`tab-${mIdx}-${gIdx}`).classList.add('active');
+            document.getElementById(`content-${mIdx}-${gIdx}`).classList.remove('hidden');
+        }
+
+        function render() {
+            const weeks = [...new Set(matchData.map(m => m.week))];
+            document.getElementById('week-nav').innerHTML = weeks.map(w => `
+                <button onclick="currentViewWeek=${w}; render()" class="tab-btn ${currentViewWeek == w ? 'tab-active' : ''}">WEEK ${w}</button>
+            `).join('');
+
+            const scheduleContainer = document.getElementById('schedule-container');
+            const filteredMatch = matchData.filter(m => m.week === currentViewWeek);
+            const days = [...new Set(filteredMatch.map(m => m.day))];
+            
+            scheduleContainer.innerHTML = days.map(day => {
+                const matchesOnDay = filteredMatch.filter(m => m.day === day);
+                return `
+                    <div class="day-header uppercase">${day}</div>
+                    ${matchesOnDay.map((m) => {
+                        const globalIdx = matchData.indexOf(m);
+                        const isFinal = m.s1 !== null && m.s2 !== null;
+                        const gameTabs = m.games?.map((g, gIdx) => `
+                            <div id="tab-${globalIdx}-${gIdx}" class="game-tab gt-${globalIdx} ${gIdx === 0 ? 'active' : ''}" onclick="event.stopPropagation(); changeGameTabFixed(${globalIdx}, ${gIdx})">${g.title}</div>
+                        `).join('') || "";
+
+                        const gameContents = m.games?.map((g, gIdx) => `
+                            <div id="content-${globalIdx}-${gIdx}" class="gc-${globalIdx} ${gIdx !== 0 ? 'hidden' : ''} grid grid-cols-2 gap-4 mt-4">
+                                <div class="text-[10px]"><p class="${g.winner===1?'text-yellow-500 font-bold':'text-slate-500'}">${g.winner===1?'👑 WINNER':'DEFEAT'}</p>
+                                    <ul class="mt-1">${g.t1Lineup?.map(p=>`<li>• ${p}</li>`).join('') || ""}</ul>
+                                </div>
+                                <div class="text-[10px] text-right border-l border-slate-800 pl-4"><p class="${g.winner===2?'text-yellow-500 font-bold':'text-slate-500'}">${g.winner===2?'WINNER 👑':'DEFEAT'}</p>
+                                    <ul class="mt-1">${g.t2Lineup?.map(p=>`<li>${p} •</li>`).join('') || ""}</ul>
+                                </div>
+                            </div>
+                        `).join('') || "<p class='text-[9px] text-slate-600 p-2 text-center italic'>Belum ada data game.</p>";
+
+                        return `
+                            <div class="overflow-hidden rounded border border-slate-800 mb-2">
+                                <div class="match-card p-3 flex items-center justify-between" onclick="toggleDetail('detail-${globalIdx}')">
+                                    <div class="flex-1 text-right font-bold uppercase text-sm ${isFinal && m.s1 > m.s2 ? 'text-yellow-500' : 'text-white'}">${m.t1}</div>
+                                    <div class="px-4 text-center min-w-[70px]">
+                                        ${isFinal ? `<span class="text-lg font-black italic tracking-tighter">${m.s1}-${m.s2}</span>` : `<span class="text-[10px] text-slate-500">${m.time}</span>`}
+                                    </div>
+                                    <div class="flex-1 text-left font-bold uppercase text-sm ${isFinal && m.s2 > m.s1 ? 'text-yellow-500' : ''}">${m.t2}</div>
+                                </div>
+                                <div id="detail-${globalIdx}" class="detail-box p-4">
+                                    <div class="flex gap-2 border-b border-slate-800 pb-2">${gameTabs}</div>
+                                    ${gameContents}
+                                </div>
+                            </div>`;
+                    }).join('')}
+                `;
+            }).join('');
+
+            let stats = teams.reduce((acc, t) => { acc[t] = { name: t, mW: 0, mL: 0, mPts: 0, gW: 0, gL: 0, netG: 0 }; return acc; }, {});
+            matchData.forEach(m => {
+                if (m.s1 !== null && m.s2 !== null) {
+                    stats[m.t1].gW += m.s1; stats[m.t1].gL += m.s2; stats[m.t2].gW += m.s2; stats[m.t2].gL += m.s1;
+                    stats[m.t1].netG += (m.s1 - m.s2); stats[m.t2].netG += (m.s2 - m.s1);
+                    if (m.s1 > m.s2) { stats[m.t1].mW++; stats[m.t1].mPts++; stats[m.t2].mL++; } 
+                    else { stats[m.t2].mW++; stats[m.t2].mPts++; stats[m.t1].mL++; }
+                }
+            });
+
+            const sorted = Object.values(stats).sort((a, b) => {
+                if (b.mPts !== a.mPts) return b.mPts - a.mPts;
+                if (b.mW !== a.mW) return b.mW - a.mW;
+                if (b.netG !== a.netG) return b.netG - a.netG;
+                return b.gW - a.gW;
+            });
+
+            document.getElementById('standings-body').innerHTML = sorted.map((t, i) => `
+                <tr class="border-t border-slate-800/50">
+                    <td class="p-3 font-bold italic ${i==0?'text-yellow-500':''}">${i + 1}</td>
+                    <td class="p-3 font-bold text-left uppercase text-xs">${t.name}</td>
+                    <td class="p-3 text-yellow-500 font-black">${t.mPts}</td>
+                    <td class="p-3 text-[10px] border-l border-slate-800/30">${t.mW}-${t.mL}</td>
+                    <td class="p-3 font-bold text-xs border-l border-slate-800/30 ${t.netG >= 0 ? 'text-green-500' : 'text-red-500'}">${t.netG}</td>
+                    <td class="p-3 text-[10px] border-l border-slate-800/30">${t.gW}-${t.gL}</td>
+                </tr>`).join('');
+        }
+        render();
+    </script>
+</body>
+</html>
